@@ -69,9 +69,9 @@
         "title": "HTTP Request Rate",
         "type": "timeseries",
         "targets": [
-          {
+            {
             "expr": "rate(http_requests_total[5m])",
-            "legendFormat": "{{job}} - {{method}} {{status}"
+            "legendFormat": "{{job}} - {{method}} {{status}}"
           }
         ],
         "fieldConfig": {
