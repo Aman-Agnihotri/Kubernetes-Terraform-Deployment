@@ -962,100 +962,6 @@ All code, configurations, and documentation are available in the project reposit
 
 ---
 
-**Submitted By:** [Student Name]  
-**Date:** [Submission Date]  
-**Course:** [Course Name/Number]  
-**Assignment:** Multi-Service Deployment with Kubernetes & Terraform  
-**Repository:** [GitHub/GitLab Repository URL]  
-
----
-
-## Grafana Dashboard Screenshots Guide
-
-### Instructions for Screenshot Collection
-
-To complete this documentation, please capture the following screenshots from your deployed Grafana instance:
-
-1. **Navigate to Grafana**: `http://$(minikube ip):30900`
-2. **Login**: Use credentials `admin/admin123`
-3. **Capture each screenshot as specified below**
-4. **Replace the placeholders in this document with actual images**
-
-### Required Screenshots:
-
-#### Screenshot 1: Grafana Login Page
-- **URL**: `http://<minikube-ip>:30900`
-- **What to show**: Login screen with username/password fields
-- **Purpose**: Demonstrates Grafana is accessible
-
-#### Screenshot 2: Grafana Home Dashboard
-- **Navigation**: After login → Home page
-- **What to show**: Dashboard list showing available dashboards
-- **Purpose**: Confirms successful Grafana deployment
-
-#### Screenshot 3: Service Uptime Dashboard
-- **Navigation**: Dashboards → Browse → Select/Create "Service Uptime"
-- **Panel Configuration**: 
-  - Query: `up{job=~"python-service|nodejs-service"}`
-  - Time range: Last 1 hour
-  - Graph type: Time series
-- **What must be visible**: Lines showing uptime (should be at 1 for running services)
-- **Purpose**: Proves services are running and monitored
-
-#### Screenshot 4: CPU Usage Dashboard
-- **Navigation**: Create new panel or find CPU metrics
-- **Panel Configuration**:
-  - Query: `rate(container_cpu_usage_seconds_total{pod=~".*-service.*"}[5m]) * 100`
-  - Time range: Last 30 minutes
-  - Graph type: Time series
-- **What must be visible**: CPU usage percentage over time for each service
-- **Purpose**: Demonstrates resource monitoring capability
-
-#### Screenshot 5: Memory Usage Dashboard
-- **Navigation**: Create new panel or find Memory metrics
-- **Panel Configuration**:
-  - Query: `container_memory_usage_bytes{pod=~".*-service.*"} / 1024 / 1024`
-  - Unit: MiB (Mebibytes)
-  - Graph type: Time series
-- **What must be visible**: Memory consumption in MB for each service
-- **Purpose**: Shows memory monitoring implementation
-
-#### Screenshot 6: HTTP Request Metrics
-- **Navigation**: Create new dashboard with two panels
-- **Panel 1 - Request Rate**:
-  - Query: `rate(http_requests_total[5m])`
-  - Graph type: Time series
-- **Panel 2 - Response Time**:
-  - Query: `histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))`
-  - Unit: seconds
-- **What must be visible**: Request rates and 95th percentile response times
-- **Purpose**: Validates application metrics collection
-
-#### Screenshot 7: Database Metrics
-- **Navigation**: PostgreSQL metrics dashboard
-- **Panel Configuration**:
-  - Query: `pg_stat_database_numbackends{datname="microservices"}`
-  - Additional queries for database size, transaction rates
-- **What must be visible**: Active database connections
-- **Purpose**: Confirms database monitoring
-
-#### Screenshot 8: Kubernetes Cluster Overview
-- **Navigation**: Dashboards → Kubernetes / Compute Resources / Cluster
-- **What must be visible**: 
-  - Node resource usage
-  - Pod distribution
-  - Overall cluster health
-- **Purpose**: Shows infrastructure monitoring
-
-### Alternative: Creating a Combined Dashboard
-
-If individual dashboards don't exist, create a single comprehensive dashboard:
-
-1. **Click "+" → "Create Dashboard"**
-2. **Add panels for each metric type**
-3. **Save as "Microservices Monitoring"**
-4. **Take a full screenshot showing all panels**
-
 ### Verification Checklist
 
 Before submitting, ensure screenshots show:
@@ -1225,35 +1131,13 @@ Several security enhancements are included:
 
 ---
 
-## Statement of Authenticity
-
-I certify that this project submission is my original work, completed in accordance with the assignment requirements. All code, configurations, and documentation have been created specifically for this assignment. External resources and references have been properly acknowledged where used.
-
-The implementation demonstrates understanding of:
-- Kubernetes orchestration principles
-- Infrastructure as Code best practices
-- Microservices architecture patterns
-- DevOps automation techniques
-- Cloud-native monitoring strategies
-
----
-
 ## Contact Information
 
-**Student:** [Your Name]  
-**Email:** [Your Email]  
-**Student ID:** [Your Student ID]  
+**Submitted By:** Aman Agnihotri
+**Email:** amanagnihotri412002@gmail.com
 
 **Project Repository:** [Repository URL]  
 **Deployment Demo:** Available upon request  
-
----
-
-## Acknowledgments
-
-This project was completed as part of the Multi-Service Deployment with Kubernetes & Terraform assignment. Thanks to the course instructors for providing clear requirements and evaluation criteria that guided this implementation.
-
-Special acknowledgment to the open-source communities behind Kubernetes, Terraform, Prometheus, and Grafana for providing the excellent tools that made this project possible.
 
 ---
 
