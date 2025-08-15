@@ -20,8 +20,17 @@ def load_values(environment):
     
     with open(values_file, 'r') as f:
         values = yaml.safe_load(f)
-    
-    # Add base64 encoding filter
+
+    # Allow env overrides to avoid mutating YAML via sed
+    env_username = os.getenv("DOCKER_USERNAME")
+    if env_username:
+        values["docker_username"] = env_username
+
+    env_registry = os.getenv("DOCKER_REGISTRY")
+    if env_registry:
+        values["docker_registry"] = env_registry
+
+    # Add base64 encoding filter usable in templates
     values['b64encode'] = lambda s: base64.b64encode(s.encode()).decode()
     
     return values

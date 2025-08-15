@@ -54,8 +54,9 @@ resource "kubernetes_namespace" "monitoring" {
   }
 }
 
-# Create Docker registry secret
+# Create Docker registry secret (disabled when using Makefile/registry-secret)
 resource "kubernetes_secret" "docker_registry" {
+  count     = 0
   depends_on = [kubernetes_namespace.app]
 
   metadata {

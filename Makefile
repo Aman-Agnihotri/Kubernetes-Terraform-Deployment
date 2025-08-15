@@ -26,6 +26,22 @@ check-prerequisites: ## Check if all required tools are installed
 	@command -v python3 >/dev/null 2>&1 || { echo "Python 3 is required but not installed."; exit 1; }
 	@echo "✓ All prerequisites are installed"
 
+# Set the docker registry secret
+.PHONY: registry-secret
+registry-secret: ## Create/refresh imagePullSecret from local docker login
+	@# Ensure namespace exists
+	kubectl create namespace $(ENVIRONMENT) --dry-run=client -o yaml | kubectl apply -f -
+	@# Require docker login
+	@if [ ! -f "$$HOME/.docker/config.json" ]; then \
+	  echo "ERROR: $$HOME/.docker/config.json not found. Run 'docker login' first."; exit 1; \
+	fi
+	@# Create/refresh the k8s secret from the logged-in docker credentials
+	kubectl -n $(ENVIRONMENT) create secret generic docker-registry-secret \
+	  --type=kubernetes.io/dockerconfigjson \
+	  --from-file=.dockerconfigjson=$$HOME/.docker/config.json \
+	  --dry-run=client -o yaml | kubectl apply -f -
+
+
 # Install dependencies
 .PHONY: install-deps
 install-deps: ## Install Python dependencies
@@ -69,13 +85,12 @@ docker-push: docker-build ## Push Docker images to registry
 # Kubernetes operations
 .PHONY: render-templates
 render-templates: ## Render Kubernetes manifests from templates
-	@echo "Updating Docker username in values..."
-	@sed -i.bak "s/YOUR_DOCKERHUB_USERNAME/$(DOCKER_USERNAME)/g" kubernetes/values/$(ENVIRONMENT).yaml
 	@echo "Rendering templates for $(ENVIRONMENT)..."
+	DOCKER_USERNAME=$(DOCKER_USERNAME) DOCKER_REGISTRY=$(DOCKER_REGISTRY) \
 	python3 $(SCRIPTS_DIR)/render-templates.py --environment $(ENVIRONMENT)
 
 .PHONY: deploy
-deploy: ## Deploy to Kubernetes
+deploy: registry-secret ## Deploy to Kubernetes (ensures imagePullSecret exists)
 	kubectl apply -f kubernetes/rendered/$(ENVIRONMENT)/
 
 .PHONY: undeploy
