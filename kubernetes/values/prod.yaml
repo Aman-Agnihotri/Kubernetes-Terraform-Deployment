@@ -1,7 +1,7 @@
 environment: prod
 namespace: prod
 docker_registry: docker.io
-docker_username: testuser
+docker_username: YOUR_DOCKERHUB_USERNAME
 
 python_service:
   service_name: python-service

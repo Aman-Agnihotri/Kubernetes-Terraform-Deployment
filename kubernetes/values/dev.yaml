@@ -1,7 +1,7 @@
 environment: dev
 namespace: dev
 docker_registry: docker.io
-docker_username: hunterhhh412
+docker_username: YOUR_DOCKERHUB_USERNAME
 
 python_service:
   service_name: python-service

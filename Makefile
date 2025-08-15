@@ -9,6 +9,11 @@ help: ## Show this help message
 
 # Variables
 ENVIRONMENT ?= dev
+CLUSTER_NAME ?= microservices-cluster
+KUBERNETES_VERSION ?= v1.28.0
+MINIKUBE_CPUS ?= 4
+MINIKUBE_MEMORY ?= 8192
+MINIKUBE_DISK_SIZE ?= 20g
 DOCKER_USERNAME ?= myuser
 DOCKER_REGISTRY ?= docker.io
 TERRAFORM_DIR = terraform
@@ -17,7 +22,7 @@ SCRIPTS_DIR = scripts
 
 # Prerequisites check
 .PHONY: check-prerequisites
-check-prerequisites: ## Check if all required tools are installed
+check-prerequisites: check-docker-login ## Check if all required tools are installed
 	@echo "Checking prerequisites..."
 	@command -v docker >/dev/null 2>&1 || { echo "Docker is required but not installed."; exit 1; }
 	@command -v kubectl >/dev/null 2>&1 || { echo "kubectl is required but not installed."; exit 1; }
@@ -30,11 +35,11 @@ check-prerequisites: ## Check if all required tools are installed
 # Check Docker login status
 .PHONY: check-docker-login
 check-docker-login: ## Verify Docker is running and user is logged in
-   @docker info >/dev/null 2>&1 || { echo "Docker is not running or not accessible"; exit 1; }
-   @if [ ! -f "$$HOME/.docker/config.json" ]; then \
-   	echo "ERROR: Not logged into Docker. Run 'docker login' first."; exit 1; \
-   fi
-   @echo "✓ Docker is running and authenticated"
+	@docker info >/dev/null 2>&1 || { echo "Docker is not running or not accessible"; exit 1; }
+	@if [ ! -f "$$HOME/.docker/config.json" ]; then \
+		echo "ERROR: Not logged into Docker. Run 'docker login' first."; exit 1; \
+	fi
+	@echo "✓ Docker is running and authenticated"
 
 # Set the docker registry secret
 .PHONY: registry-secret
@@ -54,10 +59,22 @@ registry-secret: ## Create/refresh imagePullSecret from local docker login
 
 # Install dependencies
 .PHONY: install-deps
-install-deps: ## Install Python dependencies
-	pip3 install jinja2 pyyaml
+install-deps: ## Create/use local .venv and install Python dependencies
+	@if [ ! -d ".venv" ]; then python3 -m venv .venv; fi
+	@. .venv/bin/activate && .venv/bin/python -m pip install --upgrade pip setuptools
+	@. .venv/bin/activate && .venv/bin/pip install jinja2 pyyaml
 
 # Terraform operations
+.PHONY: start-minikube
+start-minikube: ## Start Minikube cluster (idempotent)
+	@echo "Checking minikube status for profile $(CLUSTER_NAME)..."
+	@if minikube status --profile=$(CLUSTER_NAME) >/dev/null 2>&1; then \
+	  echo "minikube profile $(CLUSTER_NAME) is already running"; \
+	else \
+	  echo "Starting minikube profile $(CLUSTER_NAME)..." ; \
+	  minikube start --profile=$(CLUSTER_NAME) --kubernetes-version=$(KUBERNETES_VERSION) --cpus=$(MINIKUBE_CPUS) --memory=$(MINIKUBE_MEMORY) --disk-size=$(MINIKUBE_DISK_SIZE) --driver=docker --addons=ingress,metrics-server,dashboard ; \
+	fi
+
 .PHONY: terraform-init
 terraform-init: ## Initialize Terraform
 	cd $(TERRAFORM_DIR) && terraform init
@@ -101,11 +118,19 @@ render-templates: ## Render Kubernetes manifests from templates
 
 .PHONY: deploy
 deploy: registry-secret ## Deploy to Kubernetes (ensures imagePullSecret exists)
-	kubectl apply -f kubernetes/rendered/$(ENVIRONMENT)/
+# Use kustomize rendering when present. Applying the directory with -f caused the
+# local `kustomization.yaml` to be treated as a Kubernetes resource (Kustomization CRD)
+# which is incorrect for local deployments. Use `kubectl apply -k` to apply the
+# local kustomization or fall back to applying YAML files directly.
+	@if kubectl apply -k kubernetes/rendered/$(ENVIRONMENT)/ >/dev/null 2>&1; then \
+		kubectl apply -k kubernetes/rendered/$(ENVIRONMENT)/ ; \
+	else \
+		find kubernetes/rendered/$(ENVIRONMENT) -maxdepth 1 -type f -name '*.yaml' -not -name 'kustomization.yaml' -print0 | xargs -0 -r kubectl apply -f ; \
+	fi
 
 .PHONY: undeploy
 undeploy: ## Remove deployment from Kubernetes
-	kubectl delete -f kubernetes/rendered/$(ENVIRONMENT)/
+	@kubectl delete -f kubernetes/rendered/$(ENVIRONMENT)/
 
 .PHONY: setup-monitoring
 setup-monitoring: ## Setup Prometheus and Grafana monitoring
@@ -113,7 +138,7 @@ setup-monitoring: ## Setup Prometheus and Grafana monitoring
 
 # Combined operations
 .PHONY: setup-cluster
-setup-cluster: check-prerequisites terraform-apply ## Setup Minikube cluster with Terraform
+setup-cluster: check-prerequisites start-minikube terraform-apply ## Setup Minikube cluster with Terraform
 
 .PHONY: build-and-push
 build-and-push: docker-build docker-push ## Build and push Docker images

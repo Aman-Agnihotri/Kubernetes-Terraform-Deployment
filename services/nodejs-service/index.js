@@ -51,23 +51,31 @@ const pool = new Pool({
 });
 
 // Initialize database
-async function initDatabase() {
-    try {
-        const client = await pool.connect();
-        await client.query(`
-            CREATE TABLE IF NOT EXISTS service_logs (
-                id SERIAL PRIMARY KEY,
-                service VARCHAR(50),
-                message TEXT,
-                level VARCHAR(20),
-                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                metadata JSONB
-            )
-        `);
-        client.release();
-        logger.info('Database initialized successfully');
-    } catch (error) {
-        logger.error('Database initialization failed:', error);
+async function initDatabase(retries = 8, delayMs = 2000) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const client = await pool.connect();
+            await client.query(`
+                CREATE TABLE IF NOT EXISTS service_logs (
+                    id SERIAL PRIMARY KEY,
+                    service VARCHAR(50),
+                    message TEXT,
+                    level VARCHAR(20),
+                    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    metadata JSONB
+                )
+            `);
+            client.release();
+            logger.info('Database initialized successfully');
+            return;
+        } catch (error) {
+            logger.warn(`DB init attempt ${i + 1}/${retries} failed: ${error.code || error.message}`);
+            if (i === retries - 1) {
+                logger.error('Database initialization failed after retries:', error);
+                return;
+            }
+            await new Promise(res => setTimeout(res, delayMs * (i + 1)));
+        }
     }
 }
 

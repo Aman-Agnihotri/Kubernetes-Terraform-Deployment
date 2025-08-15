@@ -6,6 +6,7 @@ import logging
 from prometheus_flask_exporter import PrometheusMetrics
 from datetime import datetime
 import socket
+import time
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -36,27 +37,45 @@ def get_db_connection():
         logger.error(f"Database connection failed: {e}")
         return None
 
-def init_db():
-    """Initialize database table"""
-    conn = get_db_connection()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute('''
-                CREATE TABLE IF NOT EXISTS health_checks (
-                    id SERIAL PRIMARY KEY,
-                    service VARCHAR(50),
-                    timestamp TIMESTAMP,
-                    status VARCHAR(20),
-                    hostname VARCHAR(100)
-                )
-            ''')
-            conn.commit()
-            cursor.close()
-            conn.close()
-            logger.info("Database initialized successfully")
-        except Exception as e:
-            logger.error(f"Database initialization failed: {e}")
+def init_db(retries=8, delay_sec=2):
+    """Initialize required database table with retries and backoff.
+    Creates health_checks if it does not exist.
+    Returns True on success, False on permanent failure.
+    """
+    for attempt in range(1, retries + 1):
+        conn = get_db_connection()
+        if conn:
+            try:
+                cursor = conn.cursor()
+                # Create health_checks table (used by Python)
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS health_checks (
+                        id SERIAL PRIMARY KEY,
+                        service VARCHAR(50),
+                        timestamp TIMESTAMP,
+                        status VARCHAR(20),
+                        hostname VARCHAR(100)
+                    )
+                ''')
+                conn.commit()
+                cursor.close()
+                conn.close()
+                logger.info("Database initialized successfully")
+                return True
+            except Exception as e:
+                logger.error(f"Database initialization attempt {attempt} failed: {e}")
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+        else:
+            logger.warning(f"Database connection attempt {attempt} failed")
+        if attempt < retries:
+            sleep_for = delay_sec * attempt
+            logger.info(f"Retrying database init in {sleep_for} seconds (attempt {attempt}/{retries})")
+            time.sleep(sleep_for)
+    logger.error("Database initialization failed after all retries")
+    return False
 
 @app.route('/health', methods=['GET'])
 @metrics.counter('health_check_total', 'Total health check requests')
@@ -159,6 +178,12 @@ def index():
         'endpoints': ['/health', '/api/data', '/api/stats', '/metrics']
     }), 200
 
+# Ensure DB is initialized when the module is loaded (covers gunicorn workers too)
+# Block until DB initialized to guarantee required tables exist before the service starts.
+# This prevents race conditions where the app starts but required tables are missing.
+while not init_db(retries=8, delay_sec=3):
+    logger.warning("Database not ready or migration failed; retrying in 5 seconds")
+    time.sleep(5)
+
 if __name__ == '__main__':
-    init_db()
     app.run(host='0.0.0.0', port=5000, debug=False)
