@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ service_name }}-config
+  namespace: {{ namespace }}
+  labels:
+    app: {{ service_name }}
+    environment: {{ environment }}
+data:
+  {% for key, value in config_data.items() %}
+  {{ key }}: "{{ value }}"
+  {% endfor %}

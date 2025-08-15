@@ -1,0 +1,72 @@
+environment: dev
+namespace: dev
+docker_registry: docker.io
+docker_username: YOUR_DOCKERHUB_USERNAME
+
+python_service:
+  service_name: python-service
+  version: latest
+  replicas: 2
+  container_port: 5000
+  service_port: 5000
+  service_type: NodePort
+  node_port: 30001
+  metrics_port: 5000
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  additional_env:
+    - name: LOG_LEVEL
+      value: "DEBUG"
+
+nodejs_service:
+  service_name: nodejs-service
+  version: latest
+  replicas: 2
+  container_port: 3000
+  service_port: 3000
+  service_type: NodePort
+  node_port: 30002
+  metrics_port: 3000
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  additional_env:
+    - name: LOG_LEVEL
+      value: "debug"
+
+postgres:
+  username: admin
+  password: admin123
+  database: microservices
+  service_type: NodePort
+  node_port: 30432
+  storage_class: standard
+  storage_size: 5Gi
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+ingress:
+  enabled: true
+  name: microservices-ingress
+  host: microservices.local
+  services:
+    - name: python-service
+      path: /python
+      port: 5000
+    - name: nodejs-service
+      path: /node
+      port: 3000

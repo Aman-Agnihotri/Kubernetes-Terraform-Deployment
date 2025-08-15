@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ service_name }}-deployment
+  namespace: {{ namespace }}
+  labels:
+    app: {{ service_name }}
+    environment: {{ environment }}
+    version: {{ version }}
+spec:
+  replicas: {{ replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ service_name }}
+      environment: {{ environment }}
+  template:
+    metadata:
+      labels:
+        app: {{ service_name }}
+        environment: {{ environment }}
+        version: {{ version }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ metrics_port }}"
+        prometheus.io/path: "/metrics"
+    spec:
+      imagePullSecrets:
+      - name: docker-registry-secret
+      containers:
+      - name: {{ service_name }}
+        image: {{ docker_registry }}/{{ docker_username }}/{{ service_name }}:{{ version }}
+        imagePullPolicy: Always
+        ports:
+        - containerPort: {{ container_port }}
+          name: http
+          protocol: TCP
+        {% if metrics_port %}
+        - containerPort: {{ metrics_port }}
+          name: metrics
+          protocol: TCP
+        {% endif %}
+        env:
+        - name: ENVIRONMENT
+          value: "{{ environment }}"
+        - name: DB_HOST
+          value: "postgres-service"
+        - name: DB_PORT
+          value: "5432"
+        - name: DB_NAME
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: database
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: password
+        {% for env_var in additional_env %}
+        - name: {{ env_var.name }}
+          value: "{{ env_var.value }}"
+        {% endfor %}
+        resources:
+          requests:
+            memory: {{ resources.requests.memory }}
+            cpu: {{ resources.requests.cpu }}
+          limits:
+            memory: {{ resources.limits.memory }}
+            cpu: {{ resources.limits.cpu }}
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL

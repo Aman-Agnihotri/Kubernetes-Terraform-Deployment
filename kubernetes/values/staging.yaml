@@ -1,0 +1,69 @@
+environment: staging
+namespace: staging
+docker_registry: docker.io
+docker_username: YOUR_DOCKERHUB_USERNAME
+
+python_service:
+  service_name: python-service
+  version: staging
+  replicas: 3
+  container_port: 5000
+  service_port: 5000
+  service_type: ClusterIP
+  metrics_port: 5000
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "400m"
+  additional_env:
+    - name: LOG_LEVEL
+      value: "INFO"
+
+nodejs_service:
+  service_name: nodejs-service
+  version: staging
+  replicas: 3
+  container_port: 3000
+  service_port: 3000
+  service_type: ClusterIP
+  metrics_port: 3000
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "200m"
+    limits:
+      memory: "512Mi"
+      cpu: "400m"
+  additional_env:
+    - name: LOG_LEVEL
+      value: "info"
+
+postgres:
+  username: staging_admin
+  password: staging_secure_pass_2024
+  database: staging_microservices
+  service_type: ClusterIP
+  storage_class: standard
+  storage_size: 10Gi
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "500m"
+    limits:
+      memory: "1Gi"
+      cpu: "1000m"
+
+ingress:
+  enabled: true
+  name: microservices-ingress
+  host: staging.microservices.local
+  services:
+    - name: python-service
+      path: /python
+      port: 5000
+    - name: nodejs-service
+      path: /node
+      port: 3000

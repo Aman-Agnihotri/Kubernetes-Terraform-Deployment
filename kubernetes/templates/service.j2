@@ -1,0 +1,34 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ service_name }}-service
+  namespace: {{ namespace }}
+  labels:
+    app: {{ service_name }}
+    environment: {{ environment }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "{{ metrics_port }}"
+spec:
+  type: {{ service_type }}
+  selector:
+    app: {{ service_name }}
+    environment: {{ environment }}
+  ports:
+  - name: http
+    port: {{ service_port }}
+    targetPort: {{ container_port }}
+    protocol: TCP
+    {% if service_type == "NodePort" %}
+    nodePort: {{ node_port }}
+    {% endif %}
+  {% if metrics_port %}
+  - name: metrics
+    port: {{ metrics_port }}
+    targetPort: {{ metrics_port }}
+    protocol: TCP
+  {% endif %}
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800

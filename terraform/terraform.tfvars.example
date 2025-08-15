@@ -1,0 +1,5 @@
+# Copy this file to terraform.tfvars and update with your values
+docker_username = "your-dockerhub-username"
+environment     = "dev"
+cluster_name    = "microservices-cluster"
+enable_monitoring = true
