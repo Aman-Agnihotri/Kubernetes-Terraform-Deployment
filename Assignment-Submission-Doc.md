@@ -576,12 +576,33 @@ spec:
 
 The Grafana implementation includes multiple dashboards for comprehensive monitoring:
 
+**Grafana Login Page**
 ![Grafana Login Page](screenshots/grafana-login.png)
      *Figure: Grafana login interface with default credentials.*
 
 **Grafana Home Dashboard**
 ![Grafana Home Dashboard](screenshots/grafana-home.png)
      *Figure: Grafana home page displaying all available dashboards.*
+
+**Grafana Overview**
+![Grafana Overview](screenshots/grafana-overview.png)
+     *Figure: Microservices overview dashboard.*
+
+**Prometheus Overview**
+![Prometheus Overview](screenshots/prometheus-overview.png)
+     *Figure: Prometheus targets and alerts overview.*
+
+**Compute Resources (Pods)**
+![Compute Resources (Pods)](screenshots/compute-resources(pods).png)
+     *Figure: Pod CPU/memory usage across namespaces.*
+
+**CoreDNS Metrics**
+![CoreDNS Metrics](screenshots/coredns.png)
+     *Figure: CoreDNS metrics.*
+
+**Kubelet Metrics**
+![Kubelet Metrics](screenshots/kublet.png)
+     *Figure: Kubelet metrics.*
 
 
 
