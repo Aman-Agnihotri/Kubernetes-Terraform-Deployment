@@ -219,6 +219,7 @@ make full-deploy DOCKER_USERNAME=$DOCKER_USERNAME
 ```
 
 This single command will:
+
 1. ✅ Check all prerequisites
 2. ✅ Install Python dependencies
 3. ✅ Provision Minikube cluster with Terraform
@@ -279,6 +280,7 @@ make test-deployment
 ### Common First-Time Issues
 
 #### Docker Login Required
+
 ```bash
 # If you get "unauthorized" errors when pushing images:
 docker login
@@ -286,12 +288,14 @@ docker login
 ```
 
 #### Minikube Profile Issues
+
 ```bash
 # If kubectl commands fail, switch to the correct profile:
 kubectl config use-context microservices-cluster
 ```
 
 #### Port Already in Use
+
 ```bash
 # If Minikube fails to start due to port conflicts:
 minikube delete --profile=microservices-cluster
@@ -299,6 +303,7 @@ minikube start --profile=microservices-cluster --driver=docker
 ```
 
 #### Python Dependencies Missing
+
 ```bash
 # If template rendering fails:
 pip3 install jinja2 pyyaml
@@ -491,16 +496,21 @@ make quick-deploy ENVIRONMENT=prod
 
 ### Accessing Grafana Dashboard
 
+This project installs Prometheus and Grafana via the kube-prometheus-stack Helm chart (installed and managed with Helm). Grafana is exposed as a NodePort (30900) by the Helm chart and the provided setup scripts; the default admin credentials configured in `scripts/setup-monitoring.sh` and the Helm values are `admin` / `admin123`. Because the monitoring stack is Helm-managed, versions are controlled by the chart and may be updated when the chart is upgraded.
+
 1. **Get Grafana URL:**
 
 ```bash
-echo "Grafana URL: http://$(minikube ip):30900"
+MINIKUBE_IP=$(minikube ip --profile=microservices-cluster)
+echo "Grafana URL: http://$MINIKUBE_IP:30900"
 ```
 
-2. **Login Credentials:**
+2. **Login Credentials (default):**
 
 - Username: `admin`
 - Password: `admin123`
+
+> Note: Change these credentials before using this setup in a non-development environment.
 
 3. **Available Dashboards:**
 
@@ -908,6 +918,8 @@ cd terraform && terraform destroy
 
 - [Kubernetes Documentation](https://kubernetes.io/docs/)
 - [Terraform Documentation](https://www.terraform.io/docs/)
+- [Helm Documentation](https://helm.sh/docs/)
+- [Jinja2 Templating Documentation](https://jinja.palletsprojects.com/)
 - [Prometheus Documentation](https://prometheus.io/docs/)
 - [Grafana Documentation](https://grafana.com/docs/)
 
@@ -928,14 +940,6 @@ cd terraform && terraform destroy
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 👥 Support
-
-For issues, questions, or suggestions:
-
-- Create an issue in the repository
-- Contact the development team
-- Check the troubleshooting guide
 
 ## 🎉 Acknowledgments
 
