@@ -10,6 +10,7 @@ help: ## Show this help message
 # Variables
 ENVIRONMENT ?= dev
 DOCKER_USERNAME ?= myuser
+DOCKER_REGISTRY ?= docker.io
 TERRAFORM_DIR = terraform
 SERVICES_DIR = services
 SCRIPTS_DIR = scripts
@@ -26,6 +27,15 @@ check-prerequisites: ## Check if all required tools are installed
 	@command -v python3 >/dev/null 2>&1 || { echo "Python 3 is required but not installed."; exit 1; }
 	@echo "✓ All prerequisites are installed"
 
+# Check Docker login status
+.PHONY: check-docker-login
+check-docker-login: ## Verify Docker is running and user is logged in
+   @docker info >/dev/null 2>&1 || { echo "Docker is not running or not accessible"; exit 1; }
+   @if [ ! -f "$$HOME/.docker/config.json" ]; then \
+   	echo "ERROR: Not logged into Docker. Run 'docker login' first."; exit 1; \
+   fi
+   @echo "✓ Docker is running and authenticated"
+
 # Set the docker registry secret
 .PHONY: registry-secret
 registry-secret: ## Create/refresh imagePullSecret from local docker login
@@ -40,7 +50,7 @@ registry-secret: ## Create/refresh imagePullSecret from local docker login
 	  --type=kubernetes.io/dockerconfigjson \
 	  --from-file=.dockerconfigjson=$$HOME/.docker/config.json \
 	  --dry-run=client -o yaml | kubectl apply -f -
-
+	@echo "✓ Docker registry secret created/updated in namespace $(ENVIRONMENT)"
 
 # Install dependencies
 .PHONY: install-deps
@@ -75,7 +85,7 @@ docker-build: ## Build Docker images
 	docker tag $(DOCKER_USERNAME)/nodejs-service:latest $(DOCKER_USERNAME)/nodejs-service:$(ENVIRONMENT)
 
 .PHONY: docker-push
-docker-push: docker-build ## Push Docker images to registry
+docker-push: check-docker-login docker-build ## Push Docker images to registry
 	@echo "Pushing images to Docker Hub..."
 	docker push $(DOCKER_USERNAME)/python-service:latest
 	docker push $(DOCKER_USERNAME)/python-service:$(ENVIRONMENT)
@@ -109,14 +119,14 @@ setup-cluster: check-prerequisites terraform-apply ## Setup Minikube cluster wit
 build-and-push: docker-build docker-push ## Build and push Docker images
 
 .PHONY: full-deploy
-full-deploy: check-prerequisites install-deps setup-cluster build-and-push render-templates deploy setup-monitoring ## Complete deployment from scratch
+full-deploy: check-prerequisites install-deps setup-cluster build-and-push registry-secret render-templates deploy setup-monitoring ## Complete deployment from scratch
 	@echo "✅ Full deployment completed!"
 	@echo "Python Service: http://$$(minikube ip):30001"
 	@echo "Node.js Service: http://$$(minikube ip):30002"
 	@echo "Grafana: http://$$(minikube ip):30900 (admin/admin123)"
 
 .PHONY: quick-deploy
-quick-deploy: render-templates deploy ## Quick deployment (assumes images exist)
+quick-deploy: registry-secret render-templates deploy ## Quick deployment (assumes images exist)
 
 # Utility commands
 .PHONY: logs-python
