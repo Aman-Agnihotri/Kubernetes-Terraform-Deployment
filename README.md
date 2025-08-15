@@ -181,20 +181,127 @@ kubernetes-terraform-deployment/
 └── terraform.tfvars.example  # Example configuration
 ```
 
-## 🚀 Quick Start Guide
+## 🚀 From Scratch Deployment Guide
 
-### One-Command Full Deployment
+### Prerequisites Check
+
+First, verify all required tools are installed:
+
+```bash
+make check-prerequisites
+```
+
+If any tools are missing, install them using the instructions in the Prerequisites section above.
+
+### Step-by-Step First-Time Deployment
+
+#### 1. Clone and Setup
 
 ```bash
 # Clone the repository
 git clone <repository-url>
 cd kubernetes-terraform-deployment
 
-# Set your Docker Hub username
+# Set your Docker Hub username (replace with your actual username)
 export DOCKER_USERNAME=your-dockerhub-username
 
+# Install Python dependencies
+make install-deps
+```
+
+#### 2. Complete Automated Deployment
+
+**Option A: One-Command Full Deployment (Recommended for beginners)**
+
+```bash
 # Deploy everything with one command
 make full-deploy DOCKER_USERNAME=$DOCKER_USERNAME
+```
+
+This single command will:
+1. ✅ Check all prerequisites
+2. ✅ Install Python dependencies
+3. ✅ Provision Minikube cluster with Terraform
+4. ✅ Build Docker images for both services
+5. ✅ Push images to Docker Hub (requires `docker login`)
+6. ✅ Render Kubernetes manifests from templates
+7. ✅ Deploy all services to Kubernetes
+8. ✅ Setup Prometheus and Grafana monitoring
+
+**Option B: Step-by-Step Manual Deployment (For learning)**
+
+```bash
+# Step 1: Setup infrastructure
+make setup-cluster DOCKER_USERNAME=$DOCKER_USERNAME
+
+# Step 2: Build and push images (requires docker login first)
+docker login
+make build-and-push DOCKER_USERNAME=$DOCKER_USERNAME
+
+# Step 3: Deploy services
+make render-templates ENVIRONMENT=dev DOCKER_USERNAME=$DOCKER_USERNAME
+make deploy ENVIRONMENT=dev
+
+# Step 4: Setup monitoring
+make setup-monitoring
+
+# Step 5: Test everything
+make test-deployment
+```
+
+#### 3. Access Your Services
+
+After deployment completes, get your service URLs:
+
+```bash
+# Get the Minikube IP
+MINIKUBE_IP=$(minikube ip --profile=microservices-cluster)
+echo "Your services are available at:"
+echo "Python API: http://$MINIKUBE_IP:30001/health"
+echo "Node.js API: http://$MINIKUBE_IP:30002/status"
+echo "Grafana: http://$MINIKUBE_IP:30900 (admin/admin123)"
+```
+
+### Verification Commands
+
+```bash
+# Check all pods are running
+kubectl get pods -A
+
+# Test the APIs
+curl http://$(minikube ip --profile=microservices-cluster):30001/health
+curl http://$(minikube ip --profile=microservices-cluster):30002/status
+
+# Run comprehensive tests
+make test-deployment
+```
+
+### Common First-Time Issues
+
+#### Docker Login Required
+```bash
+# If you get "unauthorized" errors when pushing images:
+docker login
+# Enter your Docker Hub username and password
+```
+
+#### Minikube Profile Issues
+```bash
+# If kubectl commands fail, switch to the correct profile:
+kubectl config use-context microservices-cluster
+```
+
+#### Port Already in Use
+```bash
+# If Minikube fails to start due to port conflicts:
+minikube delete --profile=microservices-cluster
+minikube start --profile=microservices-cluster --driver=docker
+```
+
+#### Python Dependencies Missing
+```bash
+# If template rendering fails:
+pip3 install jinja2 pyyaml
 ```
 
 This single command will:

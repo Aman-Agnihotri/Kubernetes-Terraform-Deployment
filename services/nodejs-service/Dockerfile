@@ -12,12 +12,11 @@ RUN npm ci --only=production
 # Copy application code
 COPY index.js .
 
-# Create non-root user
-RUN addgroup -g 1000 appgroup && \
-    adduser -D -u 1000 -G appgroup appuser && \
-    chown -R appuser:appgroup /app
+# Ensure proper ownership
+RUN chown -R node:node /app
 
-USER appuser
+# Create non-root user - use existing node user
+USER node
 
 # Expose port
 EXPOSE 3000

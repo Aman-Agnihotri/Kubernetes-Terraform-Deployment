@@ -140,9 +140,9 @@ grafana: ## Open Grafana dashboard
 .PHONY: test-services
 test-services: ## Test all services
 	@echo "Testing Python service..."
-	curl -s http://$$(minikube ip):30001/health | jq .
+	curl -s http://$$(minikube ip --profile=microservices-cluster):30001/health | jq .
 	@echo "\nTesting Node.js service..."
-	curl -s http://$$(minikube ip):30002/status | jq .
+	curl -s http://$$(minikube ip --profile=microservices-cluster):30002/status | jq .
 
 .PHONY: test-deployment
 test-deployment: ## Run comprehensive deployment tests

@@ -34,12 +34,12 @@ spec:
       containers:
       - name: {{ service_name }}
         image: {{ docker_registry }}/{{ docker_username }}/{{ service_name }}:{{ version }}
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: {{ container_port }}
           name: http
           protocol: TCP
-        {% if metrics_port %}
+        {% if metrics_port and metrics_port != container_port %}
         - containerPort: {{ metrics_port }}
           name: metrics
           protocol: TCP
@@ -101,3 +101,13 @@ spec:
           capabilities:
             drop:
             - ALL
+        volumeMounts:
+        - name: tmp-volume
+          mountPath: /tmp
+        - name: var-tmp-volume
+          mountPath: /var/tmp
+      volumes:
+      - name: tmp-volume
+        emptyDir: {}
+      - name: var-tmp-volume
+        emptyDir: {}

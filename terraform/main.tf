@@ -15,7 +15,7 @@ resource "null_resource" "minikube_cluster" {
 
   provisioner "local-exec" {
     when    = destroy
-    command = "minikube delete --profile=${var.cluster_name}"
+    command = "minikube delete --profile=microservices-cluster"
   }
 }
 

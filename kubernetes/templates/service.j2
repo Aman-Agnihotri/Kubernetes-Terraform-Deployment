@@ -22,7 +22,7 @@ spec:
     {% if service_type == "NodePort" %}
     nodePort: {{ node_port }}
     {% endif %}
-  {% if metrics_port %}
+  {% if metrics_port and metrics_port != service_port %}
   - name: metrics
     port: {{ metrics_port }}
     targetPort: {{ metrics_port }}

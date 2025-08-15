@@ -8,7 +8,7 @@ NC='\033[0m'
 
 echo -e "${GREEN}=== Testing Deployment ===${NC}"
 
-MINIKUBE_IP=$(minikube ip)
+MINIKUBE_IP=$(minikube ip --profile=microservices-cluster)
 
 # Test Python Service
 echo -e "\n${YELLOW}Testing Python Service...${NC}"
@@ -59,10 +59,11 @@ fi
 # Check Grafana
 echo -e "\n${YELLOW}Testing Grafana...${NC}"
 GRAFANA_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://$MINIKUBE_IP:30900)
-if [ $GRAFANA_STATUS -eq 200 ]; then
+if [[ "$GRAFANA_STATUS" == "200" ]] || [[ "$GRAFANA_STATUS" == "302" ]]; then
     echo -e "${GREEN}✓ Grafana is accessible at http://$MINIKUBE_IP:30900${NC}"
+    echo -e "${GREEN}  Username: admin, Password: admin123${NC}"
 else
-    echo -e "${RED}✗ Grafana is not accessible${NC}"
+    echo -e "${RED}✗ Grafana is not accessible (HTTP $GRAFANA_STATUS)${NC}"
 fi
 
 echo -e "\n${GREEN}=== Testing Complete ===${NC}"
